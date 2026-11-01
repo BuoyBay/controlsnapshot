@@ -1,0 +1,1135 @@
+' Builtin design-time native snapshots; no project code is constructed.
+Private Function LayoutNativeKeyPart(value As String) As String
+    Return String.From(String.Len(value)) + ":" + value
+End Function
+
+''' Platform-neutral description of one native control preview.
+Public Class ControlSnapshotDescriptor
+    ''' Native kind ("" when the control has no OS-drawn chrome).
+    Public Property Kind As String = ""
+    Public Property Title As String = ""
+    Public Property Text As String = ""
+    Public Property Placeholder As String = ""
+    ''' Button state: -1 mixed, 0 off, 1 on.
+    Public Property State As Integer = 0
+    Public Property Minimum As Double = 0.0
+    Public Property Maximum As Double = 100.0
+    Public Property Value As Double = 0.0
+    ''' Kind-specific switch: secure field, vertical slider or indeterminate bar.
+    Public Property Flag As Boolean = False
+    ''' NSDatePicker elements mask for the date kind.
+    Public Property Elements As Integer = 0
+    Public Property Items As Array Of String = []
+    Public Property RowHeight As Double = 24.0
+    Public Property Enabled As Boolean = True
+    Public Property FontName As String = ""
+    Public Property FontSize As Double = 0.0
+
+    Public Function Key() As String
+        Dim parts As String = LayoutNativeKeyPart(Me.Kind) + LayoutNativeKeyPart(Me.Title) + LayoutNativeKeyPart(Me.Text) + LayoutNativeKeyPart(Me.Placeholder) + "\t" + String.From(Me.State)
+        parts += "\t" + String.From(Me.Minimum) + "\t" + String.From(Me.Maximum) + "\t" + String.From(Me.Value)
+        parts += "\t" + String.From(Me.Flag) + "\t" + String.From(Me.Elements) + "\t" + String.From(Me.RowHeight)
+        parts += "\t" + String.From(Me.Enabled) + LayoutNativeKeyPart(Me.FontName) + "\t" + String.From(Me.FontSize)
+        For Each item As String In Me.Items
+            parts += "\t" + LayoutNativeKeyPart(item)
+        Next
+        Return parts
+    End Function
+End Class
+
+#If TargetMac Then
+    Sequential Structure LayoutNativePoint
+        X As Double
+        Y As Double
+    End Structure
+    Sequential Structure LayoutNativeSize
+        W As Double
+        H As Double
+    End Structure
+    Sequential Structure LayoutNativeRect
+        Origin As LayoutNativePoint
+        Size As LayoutNativeSize
+    End Structure
+
+    Private Declare Function LCNApplication Lib "AppKit" Selector "sharedApplication" (cls As Ptr) As Ptr
+    Private Declare Function LCNWindowInit Lib "AppKit" Selector "initWithContentRect:styleMask:backing:defer:" (obj As Ptr, rect As LayoutNativeRect, style As UInt64, backing As UInt64, deferCreation As Boolean) As Ptr
+    Private Declare Sub LCNWindowContent Lib "AppKit" Selector "setContentView:" (window As Ptr, view As Ptr)
+    Private Declare Function LCNCurrentAppearance Lib "AppKit" Selector "currentAppearance" (cls As Ptr) As Ptr
+    Private Declare Sub LCNCurrentSet Lib "AppKit" Selector "setCurrentAppearance:" (cls As Ptr, appearance As Ptr)
+    Private Declare Function LCNBitmapData Lib "AppKit" Selector "bitmapData" (rep As Ptr) As Ptr
+    Private Declare Function LCNBitmapStride Lib "AppKit" Selector "bytesPerRow" (rep As Ptr) As Integer
+    Private Declare Function LCNZero Lib "c" Alias "memset" (data As Ptr, value As Int32, length As UInt64) As Ptr
+    Private Declare Function LCNSelector Lib "objc" Alias "sel_registerName" (name As String) As Ptr
+    Private Declare Function LCNResponds Lib "Foundation" Selector "respondsToSelector:" (obj As Ptr, action As Ptr) As Boolean
+    Private Declare Sub LCNEnabled Lib "AppKit" Selector "setEnabled:" (obj As Ptr, enabled As Boolean)
+    Private Declare Sub LCNFont Lib "AppKit" Selector "setFont:" (obj As Ptr, font As Ptr)
+    Private Declare Function LCNSystemFont Lib "AppKit" Selector "systemFontOfSize:" (cls As Ptr, size As Double) As Ptr
+    Private Declare Function LCNNamedFont Lib "AppKit" Selector "fontWithName:size:" (cls As Ptr, name As Ptr, size As Double) As Ptr
+    Private Declare Function LCNSubviews Lib "AppKit" Selector "subviews" (view As Ptr) As Ptr
+    Private Declare Function LCNCount Lib "Foundation" Selector "count" (items As Ptr) As Integer
+    Private Declare Function LCNAt Lib "Foundation" Selector "objectAtIndex:" (items As Ptr, index As Integer) As Ptr
+    Private Declare Function LCNAccent Lib "AppKit" Selector "controlAccentColor" (cls As Ptr) As Ptr
+    Private Declare Function LCNDeviceRGB Lib "AppKit" Selector "deviceRGBColorSpace" (cls As Ptr) As Ptr
+    Private Declare Function LCNConvertColor Lib "AppKit" Selector "colorUsingColorSpace:" (obj As Ptr, space As Ptr) As Ptr
+    Private Declare Function LCNRed Lib "AppKit" Selector "redComponent" (color As Ptr) As Double
+    Private Declare Function LCNGreen Lib "AppKit" Selector "greenComponent" (color As Ptr) As Double
+    Private Declare Function LCNBlue Lib "AppKit" Selector "blueComponent" (color As Ptr) As Double
+    Private Declare Function LCNWorkspace Lib "AppKit" Selector "sharedWorkspace" (cls As Ptr) As Ptr
+    Private Declare Function LCNContrast Lib "AppKit" Selector "accessibilityDisplayShouldIncreaseContrast" (workspace As Ptr) As Boolean
+    Private Declare Function LCNClass Lib "objc" Alias "objc_getClass" (name As String) As Ptr
+    Private Declare Function LCNAlloc Lib "Foundation" Selector "alloc" (cls As Ptr) As Ptr
+    Private Declare Sub LCNRelease Lib "Foundation" Selector "release" (obj As Ptr)
+    Private Declare Function LCNString Lib "Foundation" Selector "stringWithUTF8String:" (cls As Ptr, s As String) As Ptr
+    Private Declare Function LCNEmptyDictionary Lib "Foundation" Selector "dictionary" (cls As Ptr) As Ptr
+    Private Declare Function LCNDataLength Lib "Foundation" Selector "length" (data As Ptr) As Integer
+    Private Declare Function LCNDataBytes Lib "Foundation" Selector "bytes" (data As Ptr) As Ptr
+    Private Declare Function LCNDateSinceReference Lib "Foundation" Selector "dateWithTimeIntervalSinceReferenceDate:" (cls As Ptr, seconds As Double) As Ptr
+    Private Declare Function LCNTimeZoneOffset Lib "Foundation" Selector "timeZoneForSecondsFromGMT:" (cls As Ptr, seconds As Integer) As Ptr
+
+    Private Declare Function LCNInitFrame Lib "AppKit" Selector "initWithFrame:" (obj As Ptr, frame As LayoutNativeRect) As Ptr
+    Private Declare Function LCNInitPopup Lib "AppKit" Selector "initWithFrame:pullsDown:" (obj As Ptr, frame As LayoutNativeRect, pullsDown As Boolean) As Ptr
+    Private Declare Function LCNInitIdentifier Lib "AppKit" Selector "initWithIdentifier:" (obj As Ptr, identifier As Ptr) As Ptr
+    Private Declare Sub LCNSetFrame Lib "AppKit" Selector "setFrame:" (view As Ptr, frame As LayoutNativeRect)
+    Private Declare Sub LCNAddSubview Lib "AppKit" Selector "addSubview:" (view As Ptr, child As Ptr)
+    Private Declare Sub LCNLayoutSubtree Lib "AppKit" Selector "layoutSubtreeIfNeeded" (view As Ptr)
+    Private Declare Function LCNAppearanceNamed Lib "AppKit" Selector "appearanceNamed:" (cls As Ptr, name As Ptr) As Ptr
+    Private Declare Sub LCNSetAppearance Lib "AppKit" Selector "setAppearance:" (view As Ptr, appearance As Ptr)
+    Private Declare Function LCNMainScreen Lib "AppKit" Selector "mainScreen" (cls As Ptr) As Ptr
+    Private Declare Function LCNBackingScale Lib "AppKit" Selector "backingScaleFactor" (screen As Ptr) As Double
+
+    Private Declare Sub LCNSetTitle Lib "AppKit" Selector "setTitle:" (obj As Ptr, title As Ptr)
+    Private Declare Sub LCNSetStringValue Lib "AppKit" Selector "setStringValue:" (obj As Ptr, value As Ptr)
+    Private Declare Sub LCNSetPlaceholder Lib "AppKit" Selector "setPlaceholderString:" (obj As Ptr, value As Ptr)
+    Private Declare Sub LCNSetButtonType Lib "AppKit" Selector "setButtonType:" (button As Ptr, kind As Integer)
+    Private Declare Sub LCNSetBezelStyle Lib "AppKit" Selector "setBezelStyle:" (button As Ptr, style As Integer)
+    Private Declare Sub LCNSetAllowsMixed Lib "AppKit" Selector "setAllowsMixedState:" (button As Ptr, allowed As Boolean)
+    Private Declare Sub LCNSetState Lib "AppKit" Selector "setState:" (button As Ptr, state As Integer)
+    Private Declare Sub LCNSetBezeled Lib "AppKit" Selector "setBezeled:" (field As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetBordered Lib "AppKit" Selector "setBordered:" (field As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetDrawsBackground Lib "AppKit" Selector "setDrawsBackground:" (field As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetEditable Lib "AppKit" Selector "setEditable:" (field As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetMinValue Lib "AppKit" Selector "setMinValue:" (control As Ptr, value As Double)
+    Private Declare Sub LCNSetMaxValue Lib "AppKit" Selector "setMaxValue:" (control As Ptr, value As Double)
+    Private Declare Sub LCNSetDoubleValue Lib "AppKit" Selector "setDoubleValue:" (control As Ptr, value As Double)
+    Private Declare Sub LCNSetVertical Lib "AppKit" Selector "setVertical:" (slider As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetIndicatorStyle Lib "AppKit" Selector "setStyle:" (indicator As Ptr, style As Integer)
+    Private Declare Sub LCNSetIndeterminate Lib "AppKit" Selector "setIndeterminate:" (indicator As Ptr, flag As Boolean)
+    Private Declare Sub LCNAddItemTitle Lib "AppKit" Selector "addItemWithTitle:" (popup As Ptr, title As Ptr)
+    Private Declare Sub LCNSetDatePickerStyle Lib "AppKit" Selector "setDatePickerStyle:" (picker As Ptr, style As Integer)
+    Private Declare Sub LCNSetDatePickerElements Lib "AppKit" Selector "setDatePickerElements:" (picker As Ptr, elements As Integer)
+    Private Declare Sub LCNSetTimeZone Lib "AppKit" Selector "setTimeZone:" (picker As Ptr, zone As Ptr)
+    Private Declare Sub LCNSetDateValue Lib "AppKit" Selector "setDateValue:" (picker As Ptr, value As Ptr)
+    Private Declare Sub LCNSetTabViewType Lib "AppKit" Selector "setTabViewType:" (tabs As Ptr, kind As Integer)
+    Private Declare Sub LCNSetSegmentCount Lib "AppKit" Selector "setSegmentCount:" (control As Ptr, count As Integer)
+    Private Declare Sub LCNSetSegmentLabel Lib "AppKit" Selector "setLabel:forSegment:" (control As Ptr, label As Ptr, segment As Integer)
+    Private Declare Sub LCNSetSelectedSegment Lib "AppKit" Selector "setSelectedSegment:" (control As Ptr, segment As Integer)
+    Private Declare Sub LCNSetSegmentDistribution Lib "AppKit" Selector "setSegmentDistribution:" (control As Ptr, distribution As Integer)
+    Private Declare Sub LCNSizeToFit Lib "AppKit" Selector "sizeToFit" (control As Ptr)
+    Private Declare Function LCNGetFrame Lib "AppKit" Selector "frame" (view As Ptr) As LayoutNativeRect
+    Private Declare Sub LCNSetBorderType Lib "AppKit" Selector "setBorderType:" (scroll As Ptr, border As Integer)
+    Private Declare Sub LCNSetHasVerticalScroller Lib "AppKit" Selector "setHasVerticalScroller:" (scroll As Ptr, flag As Boolean)
+    Private Declare Sub LCNSetDocumentView Lib "AppKit" Selector "setDocumentView:" (scroll As Ptr, document As Ptr)
+    Private Declare Function LCNContentSize Lib "AppKit" Selector "contentSize" (scroll As Ptr) As LayoutNativeSize
+    Private Declare Sub LCNSetString Lib "AppKit" Selector "setString:" (textView As Ptr, value As Ptr)
+    Private Declare Sub LCNSetColumnTitle Lib "AppKit" Selector "setTitle:" (column As Ptr, title As Ptr)
+    Private Declare Sub LCNSetColumnWidth Lib "AppKit" Selector "setWidth:" (column As Ptr, width As Double)
+    Private Declare Sub LCNAddTableColumn Lib "AppKit" Selector "addTableColumn:" (table As Ptr, column As Ptr)
+    Private Declare Sub LCNSetRowHeight Lib "AppKit" Selector "setRowHeight:" (table As Ptr, height As Double)
+    Private Declare Sub LCNSetAlternating Lib "AppKit" Selector "setUsesAlternatingRowBackgroundColors:" (table As Ptr, flag As Boolean)
+
+    Private Declare Function LCNInitBitmap Lib "AppKit" Selector "initWithBitmapDataPlanes:pixelsWide:pixelsHigh:bitsPerSample:samplesPerPixel:hasAlpha:isPlanar:colorSpaceName:bytesPerRow:bitsPerPixel:" (rep As Ptr, planes As Ptr, pixelsWide As Integer, pixelsHigh As Integer, bitsPerSample As Integer, samplesPerPixel As Integer, hasAlpha As Boolean, isPlanar As Boolean, colorSpace As Ptr, bytesPerRow As Integer, bitsPerPixel As Integer) As Ptr
+    Private Declare Sub LCNSetImageSize Lib "AppKit" Selector "setSize:" (rep As Ptr, size As LayoutNativeSize)
+    Private Declare Sub LCNCacheDisplay Lib "AppKit" Selector "cacheDisplayInRect:toBitmapImageRep:" (view As Ptr, rect As LayoutNativeRect, rep As Ptr)
+    Private Declare Function LCNImageData Lib "AppKit" Selector "representationUsingType:properties:" (rep As Ptr, fileType As Integer, properties As Ptr) As Ptr
+
+    Private Function LCNText(value As String) As Ptr
+        Return LCNString(LCNClass("NSString"), value)
+    End Function
+
+    Private Function LCNFrame(x As Double, y As Double, w As Double, h As Double) As LayoutNativeRect
+        Dim frame As LayoutNativeRect = { Origin: { X: x, Y: y }, Size: { W: w, H: h } }
+        Return frame
+    End Function
+
+    ' Owned (+1) view of the given AppKit class.
+    Private Function LCNView(className As String, w As Double, h As Double) As Ptr
+        Dim cls As Ptr = LCNClass(className)
+        If cls = Nil Then Return Nil
+        Return LCNInitFrame(LCNAlloc(cls), LCNFrame(0.0, 0.0, w, h))
+    End Function
+
+    Private Function LCNButton(kind As Integer, bezel As Integer, title As String, w As Double, h As Double) As Ptr
+        Dim button As Ptr = LCNView("NSButton", w, h)
+        If button = Nil Then Return Nil
+        LCNSetButtonType(button, kind)
+        If bezel > 0 Then LCNSetBezelStyle(button, bezel)
+        LCNSetTitle(button, LCNText(title))
+        Return button
+    End Function
+
+    ' Builds the owned root view for a spec, or Nil when AppKit lacks the class.
+    Private Function LCNBuild(spec As ControlSnapshotDescriptor, w As Double, h As Double) As Ptr
+        ' AppKit constants: NSButtonTypeSwitch 3, Radio 4, PushOnPushOff 1,
+        ' MomentaryPushIn 7; NSBezelStylePush 1, Disclosure 5; NSBezelBorder 2.
+        Dim view As Ptr = Nil
+        Select Case spec.Kind
+            Case "button"
+                view = LCNButton(7, 1, spec.Title, w, h)
+            Case "checkbox"
+                view = LCNButton(3, 0, spec.Title, w, h)
+                If view <> Nil Then
+                    LCNSetAllowsMixed(view, True)
+                    LCNSetState(view, spec.State)
+                End If
+            Case "radio"
+                view = LCNButton(4, 0, spec.Title, w, h)
+                If view <> Nil Then LCNSetState(view, spec.State)
+            Case "radiogroup"
+                view = LCNView("NSView", w, h)
+                If view <> Nil Then
+                    For index As Integer = 0 To Array.LastIndex(spec.Items)
+                        ' Unflipped container: the first option sits at the top.
+                        Dim radio As Ptr = LCNButton(4, 0, spec.Items(index), w, 20.0)
+                        If radio = Nil Then Continue For
+                        LCNSetFrame(radio, LCNFrame(0.0, h - 22.0 * (index + 1) + 1.0, w, 20.0))
+                        If index = 0 Then LCNSetState(radio, 1)
+                        LCNAddSubview(view, radio)
+                        LCNRelease(radio)
+                    Next
+                End If
+            Case "disclosure"
+                view = LCNButton(1, 5, "", w, h)
+                If view <> Nil Then LCNSetState(view, spec.State)
+            Case "label"
+                view = LCNView("NSTextField", w, h)
+                If view <> Nil Then
+                    LCNSetBezeled(view, False)
+                    LCNSetBordered(view, False)
+                    LCNSetDrawsBackground(view, False)
+                    LCNSetEditable(view, False)
+                    LCNSetStringValue(view, LCNText(spec.Text))
+                End If
+            Case "textfield", "search", "combo"
+                Dim className As String = "NSTextField"
+                If spec.Kind = "search" Then className = "NSSearchField"
+                If spec.Kind = "combo" Then className = "NSComboBox"
+                If spec.Flag Then className = "NSSecureTextField"
+                view = LCNView(className, w, h)
+                If view <> Nil Then
+                    LCNSetStringValue(view, LCNText(spec.Text))
+                    If spec.Placeholder <> "" Then LCNSetPlaceholder(view, LCNText(spec.Placeholder))
+                End If
+            Case "popup"
+                Dim cls As Ptr = LCNClass("NSPopUpButton")
+                If cls <> Nil Then
+                    view = LCNInitPopup(LCNAlloc(cls), LCNFrame(0.0, 0.0, w, h), False)
+                    For Each item As String In spec.Items
+                        LCNAddItemTitle(view, LCNText(item))
+                    Next
+                End If
+            Case "date"
+                view = LCNView("NSDatePicker", w, h)
+                If view <> Nil Then
+                    LCNSetDatePickerStyle(view, 0)
+                    LCNSetDatePickerElements(view, spec.Elements)
+                    LCNSetTimeZone(view, LCNTimeZoneOffset(LCNClass("NSTimeZone"), 0))
+                    ' 2026-01-01 09:41 UTC: a fixed sample, never the clock.
+                    LCNSetDateValue(view, LCNDateSinceReference(LCNClass("NSDate"), 788953260.0))
+                End If
+            Case "slider", "progress", "stepper"
+                Dim className As String = "NSSlider"
+                If spec.Kind = "progress" Then className = "NSProgressIndicator"
+                If spec.Kind = "stepper" Then className = "NSStepper"
+                view = LCNView(className, w, h)
+                If view <> Nil Then
+                    If spec.Kind = "progress" Then
+                        LCNSetIndicatorStyle(view, 0)
+                        LCNSetIndeterminate(view, spec.Flag)
+                    End If
+                    If spec.Kind = "slider" Then LCNSetVertical(view, spec.Flag)
+                    LCNSetMinValue(view, spec.Minimum)
+                    LCNSetMaxValue(view, spec.Maximum)
+                    LCNSetDoubleValue(view, spec.Value)
+                End If
+            Case "segments"
+                view = LCNView("NSSegmentedControl", w, h)
+                If view <> Nil Then
+                    LCNSetSegmentCount(view, Array.Count(spec.Items))
+                    For index As Integer = 0 To Array.LastIndex(spec.Items)
+                        LCNSetSegmentLabel(view, LCNText(spec.Items(index)), index)
+                    Next
+                    LCNSetSelectedSegment(view, spec.State)
+                    ' NSSegmentDistributionFillEqually = 2: segments share the frame.
+                    LCNSetSegmentDistribution(view, 2)
+                End If
+            Case "tabs"
+                ' Detached NSTabView never lays out its tab strip, so compose the
+                ' same pieces AppKit uses: a borderless-tab bezel body and a
+                ' segmented control straddling its top edge.
+                view = LCNView("NSView", w, h)
+                Dim segments As Ptr = LCNView("NSSegmentedControl", w, 24.0)
+                Dim body As Ptr = Nil
+                If segments <> Nil Then
+                    LCNSetSegmentCount(segments, Array.Count(spec.Items))
+                    For index As Integer = 0 To Array.LastIndex(spec.Items)
+                        LCNSetSegmentLabel(segments, LCNText(spec.Items(index)), index)
+                    Next
+                    LCNSetSelectedSegment(segments, 0)
+                    LCNSizeToFit(segments)
+                    Dim strip As LayoutNativeRect = LCNGetFrame(segments)
+                    Dim stripW As Double = Math.Min(w, strip.Size.W)
+                    Dim stripH As Double = Math.Min(h, strip.Size.H)
+                    ' NSNoTabsBezelBorder = 4; the body's top edge meets the strip's middle.
+                    body = LCNView("NSTabView", w, Math.Max(1.0, h - stripH / 2.0))
+                    If view <> Nil And body <> Nil Then
+                        LCNSetTabViewType(body, 4)
+                        LCNAddSubview(view, body)
+                        LCNSetFrame(segments, LCNFrame(Math.Floor((w - stripW) / 2.0), h - stripH, stripW, stripH))
+                        LCNAddSubview(view, segments)
+                    End If
+                    LCNRelease(segments)
+                End If
+                If body <> Nil Then LCNRelease(body)
+            Case "textarea", "list"
+                view = LCNView("NSScrollView", w, h)
+                If view <> Nil Then
+                    LCNSetBorderType(view, 2)
+                    LCNSetHasVerticalScroller(view, True)
+                    Dim content As LayoutNativeSize = LCNContentSize(view)
+                    Dim document As Ptr = Nil
+                    If spec.Kind = "textarea" Then
+                        document = LCNView("NSTextView", content.W, content.H)
+                        If document <> Nil Then LCNSetString(document, LCNText(spec.Text))
+                    Else
+                        document = LCNView("NSTableView", content.W, content.H)
+                        Dim columnClass As Ptr = LCNClass("NSTableColumn")
+                        If document <> Nil And columnClass <> Nil Then
+                            Dim column As Ptr = LCNInitIdentifier(LCNAlloc(columnClass), LCNText("column"))
+                            LCNSetColumnTitle(column, LCNText(spec.Title))
+                            LCNSetColumnWidth(column, Math.Max(20.0, content.W - 4.0))
+                            LCNAddTableColumn(document, column)
+                            LCNRelease(column)
+                            LCNSetRowHeight(document, Math.Max(8.0, spec.RowHeight))
+                            LCNSetAlternating(document, True)
+                        End If
+                    End If
+                    If document <> Nil Then
+                        LCNSetDocumentView(view, document)
+                        LCNRelease(document)
+                    End If
+                End If
+        End Select
+        Return view
+    End Function
+
+    Private Sub LCNApplyVisuals(view As Ptr, spec As ControlSnapshotDescriptor)
+        If LCNResponds(view, LCNSelector("setEnabled:")) Then LCNEnabled(view, spec.Enabled)
+        If (spec.FontName <> "" Or spec.FontSize > 0.0) And LCNResponds(view, LCNSelector("setFont:")) Then
+            Dim size As Double = spec.FontSize
+            If size <= 0.0 Then size = 13.0
+            Dim font As Ptr = Nil
+            If spec.FontName <> "" Then font = LCNNamedFont(LCNClass("NSFont"), LCNText(spec.FontName), size)
+            If font = Nil Then font = LCNSystemFont(LCNClass("NSFont"), size)
+            LCNFont(view, font)
+        End If
+        Dim children As Ptr = LCNSubviews(view)
+        For i As Integer = 0 To LCNCount(children) - 1
+            LCNApplyVisuals(LCNAt(children, i), spec)
+        Next
+    End Sub
+
+    ' Encoded PNG of the spec drawn by AppKit, or Nil.
+    Private Function LCNRender(spec As ControlSnapshotDescriptor, w As Double, h As Double, dark As Boolean, scale As Double) As Bytes
+        LCNApplication(LCNClass("NSApplication"))
+        Dim priorAppearance As Ptr = LCNCurrentAppearance(LCNClass("NSAppearance"))
+        Dim view As Ptr = Nil
+        Dim host As Ptr = Nil
+        Dim png As Bytes = Nil
+        Try
+            Dim appearanceName As String = "NSAppearanceNameAqua"
+            If dark Then appearanceName = "NSAppearanceNameDarkAqua"
+            Dim appearance As Ptr = LCNAppearanceNamed(LCNClass("NSAppearance"), LCNText(appearanceName))
+            If appearance <> Nil Then LCNCurrentSet(LCNClass("NSAppearance"), appearance)
+            view = LCNBuild(spec, w, h)
+            If view = Nil Then Return Nil
+            ' A never-shown host gives modern AppKit cells window/appearance context.
+            host = LCNWindowInit(LCNAlloc(LCNClass("NSWindow")), LCNFrame(0.0, 0.0, w, h), 0, 2, False)
+            If host = Nil Then Return Nil
+            If appearance <> Nil Then
+                LCNSetAppearance(host, appearance)
+                LCNSetAppearance(view, appearance)
+            End If
+            LCNWindowContent(host, view)
+            LCNApplyVisuals(view, spec)
+            LCNLayoutSubtree(view)
+            Dim pixelsWide As Integer = Math.Max(1, Math.Ceiling(w * scale))
+            Dim pixelsHigh As Integer = Math.Max(1, Math.Ceiling(h * scale))
+            Dim rep As Ptr = LCNInitBitmap(LCNAlloc(LCNClass("NSBitmapImageRep")), Nil, pixelsWide, pixelsHigh, 8, 4, True, False, LCNText("NSDeviceRGBColorSpace"), 0, 0)
+            If rep <> Nil Then
+                Try
+                    ' cacheDisplay leaves transparent pixels untouched: initialize them.
+                    LCNZero(LCNBitmapData(rep), 0, LCNBitmapStride(rep) * pixelsHigh)
+                    Dim size As LayoutNativeSize = { W: w, H: h }
+                    LCNSetImageSize(rep, size)
+                    LCNCacheDisplay(view, LCNFrame(0.0, 0.0, w, h), rep)
+                    Dim data As Ptr = LCNImageData(rep, 4, LCNEmptyDictionary(LCNClass("NSDictionary")))
+                    If data <> Nil Then
+                        Dim length As Integer = LCNDataLength(data)
+                        If length > 0 Then
+                            png = New Bytes(length)
+                            png.Append(LCNDataBytes(data), length)
+                        End If
+                    End If
+                Finally
+                    LCNRelease(rep)
+                End Try
+            End If
+        Finally
+            If view <> Nil Then LCNRelease(view)
+            If host <> Nil Then LCNRelease(host)
+            LCNCurrentSet(LCNClass("NSAppearance"), priorAppearance)
+        End Try
+        Return png
+    End Function
+
+#End If
+
+' Renderer-value readers: typed literal key, else the exact source expression.
+#If TargetLinux Then
+' Snapshot native children directly, not the desktop. A transparent, non-presented
+' host provides a GTK native renderer. Explicit allocation avoids pumping the main
+' loop (and reentering editor callbacks) from inside Canvas.Paint.
+Private Optional Declare Function LCGInit Lib "libgtk-4.so.1" Alias "gtk_init_check" () As Int32
+Private Optional Declare Function LCGWindow Lib "libgtk-4.so.1" Alias "gtk_window_new" () As Ptr
+Private Optional Declare Sub LCGDecorated Lib "libgtk-4.so.1" Alias "gtk_window_set_decorated" (widget As Ptr, flag As Int32)
+Private Optional Declare Sub LCGOpacity Lib "libgtk-4.so.1" Alias "gtk_widget_set_opacity" (widget As Ptr, opacity As Double)
+Private Optional Declare Sub LCGChild Lib "libgtk-4.so.1" Alias "gtk_window_set_child" (widget As Ptr, child As Ptr)
+Private Optional Declare Sub LCGVisible Lib "libgtk-4.so.1" Alias "gtk_widget_set_visible" (widget As Ptr, flag As Int32)
+Private Optional Declare Sub LCGAllocate Lib "libgtk-4.so.1" Alias "gtk_widget_allocate" (widget As Ptr, width As Int32, height As Int32, baseline As Int32, transform As Ptr)
+Private Optional Declare Sub LCGDestroy Lib "libgtk-4.so.1" Alias "gtk_window_destroy" (widget As Ptr)
+Private Optional Declare Function LCGSnapshot Lib "libgtk-4.so.1" Alias "gtk_snapshot_new" () As Ptr
+Private Optional Declare Sub LCGSnapshotChild Lib "libgtk-4.so.1" Alias "gtk_widget_snapshot_child" (parent As Ptr, child As Ptr, snapshot As Ptr)
+Private Optional Declare Sub LCGSnapshotScale Lib "libgtk-4.so.1" Alias "gtk_snapshot_scale" (snapshot As Ptr, sx As Single, sy As Single)
+Private Optional Declare Function LCGNode Lib "libgtk-4.so.1" Alias "gtk_snapshot_free_to_node" (snapshot As Ptr) As Ptr
+Private Optional Declare Sub LCGNodeUnref Lib "libgtk-4.so.1" Alias "gsk_render_node_unref" (node As Ptr)
+Private Optional Declare Function LCGRenderer Lib "libgtk-4.so.1" Alias "gtk_native_get_renderer" (widget As Ptr) As Ptr
+Private Optional Declare Function LCGTexture Lib "libgtk-4.so.1" Alias "gsk_renderer_render_texture" (renderer As Ptr, node As Ptr, viewport As Ptr) As Ptr
+Private Optional Declare Function LCGPNG Lib "libgtk-4.so.1" Alias "gdk_texture_save_to_png_bytes" (texture As Ptr) As Ptr
+Private Optional Declare Function LCGBytesData Lib "libglib-2.0.so.0" Alias "g_bytes_get_data" (data As Ptr, size As Ptr) As Ptr
+Private Optional Declare Function LCGBytesSize Lib "libglib-2.0.so.0" Alias "g_bytes_get_size" (data As Ptr) As UInt64
+Private Optional Declare Sub LCGBytesUnref Lib "libglib-2.0.so.0" Alias "g_bytes_unref" (data As Ptr)
+Private Optional Declare Sub LCGUnref Lib "libgobject-2.0.so.0" Alias "g_object_unref" (obj As Ptr)
+Private Optional Declare Function LCGRefSink Lib "libgobject-2.0.so.0" Alias "g_object_ref_sink" (obj As Ptr) As Ptr
+Private Optional Declare Sub LCGSensitive Lib "libgtk-4.so.1" Alias "gtk_widget_set_sensitive" (widget As Ptr, flag As Int32)
+Private Optional Declare Function LCGFirst Lib "libgtk-4.so.1" Alias "gtk_widget_get_first_child" (widget As Ptr) As Ptr
+Private Optional Declare Function LCGNext Lib "libgtk-4.so.1" Alias "gtk_widget_get_next_sibling" (widget As Ptr) As Ptr
+Private Optional Declare Function LCGStyle Lib "libgtk-4.so.1" Alias "gtk_widget_get_style_context" (widget As Ptr) As Ptr
+Private Optional Declare Function LCGProvider Lib "libgtk-4.so.1" Alias "gtk_css_provider_new" () As Ptr
+Private Optional Declare Sub LCGTheme Lib "libgtk-4.so.1" Alias "gtk_css_provider_load_named" (provider As Ptr, name As String, variant As Ptr)
+Private Optional Declare Sub LCGCSS Lib "libgtk-4.so.1" Alias "gtk_css_provider_load_from_data" (provider As Ptr, css As String, length As Int64)
+Private Optional Declare Sub LCGStyleProvider Lib "libgtk-4.so.1" Alias "gtk_style_context_add_provider" (context As Ptr, provider As Ptr, priority As UInt32)
+Private Optional Declare Sub LCGClass Lib "libgtk-4.so.1" Alias "gtk_widget_add_css_class" (widget As Ptr, name As String)
+Private Optional Declare Function LCGMenuButton Lib "libgtk-4.so.1" Alias "gtk_menu_button_new" () As Ptr
+Private Optional Declare Sub LCGMenuLabel Lib "libgtk-4.so.1" Alias "gtk_menu_button_set_label" (widget As Ptr, value As String)
+Private Optional Declare Function LCGButtonChild Lib "libgtk-4.so.1" Alias "gtk_button_get_child" (widget As Ptr) As Ptr
+Private Optional Declare Sub LCGIconSize Lib "libgtk-4.so.1" Alias "gtk_image_set_pixel_size" (widget As Ptr, size As Int32)
+Private Optional Declare Function LCGIconButton Lib "libgtk-4.so.1" Alias "gtk_button_new_from_icon_name" (name As String) As Ptr
+Private Optional Declare Function LCGButton Lib "libgtk-4.so.1" Alias "gtk_button_new_with_label" (text As String) As Ptr
+Private Optional Declare Function LCGToggle Lib "libgtk-4.so.1" Alias "gtk_toggle_button_new_with_label" (text As String) As Ptr
+Private Optional Declare Sub LCGToggleActive Lib "libgtk-4.so.1" Alias "gtk_toggle_button_set_active" (widget As Ptr, active As Int32)
+Private Optional Declare Function LCGCheck Lib "libgtk-4.so.1" Alias "gtk_check_button_new_with_label" (text As String) As Ptr
+Private Optional Declare Sub LCGCheckActive Lib "libgtk-4.so.1" Alias "gtk_check_button_set_active" (widget As Ptr, active As Int32)
+Private Optional Declare Sub LCGCheckMixed Lib "libgtk-4.so.1" Alias "gtk_check_button_set_inconsistent" (widget As Ptr, mixed As Int32)
+Private Optional Declare Sub LCGCheckGroup Lib "libgtk-4.so.1" Alias "gtk_check_button_set_group" (widget As Ptr, group As Ptr)
+Private Optional Declare Function LCGBox Lib "libgtk-4.so.1" Alias "gtk_box_new" (orientation As Int32, spacing As Int32) As Ptr
+Private Optional Declare Sub LCGAppend Lib "libgtk-4.so.1" Alias "gtk_box_append" (box As Ptr, child As Ptr)
+Private Optional Declare Sub LCGExpand Lib "libgtk-4.so.1" Alias "gtk_widget_set_hexpand" (widget As Ptr, expand As Int32)
+Private Optional Declare Function LCGLabel Lib "libgtk-4.so.1" Alias "gtk_label_new" (text As String) As Ptr
+Private Optional Declare Sub LCGAlign Lib "libgtk-4.so.1" Alias "gtk_label_set_xalign" (widget As Ptr, align As Single)
+Private Optional Declare Function LCGEntry Lib "libgtk-4.so.1" Alias "gtk_entry_new" () As Ptr
+Private Optional Declare Function LCGSearch Lib "libgtk-4.so.1" Alias "gtk_search_entry_new" () As Ptr
+Private Optional Declare Sub LCGText Lib "libgtk-4.so.1" Alias "gtk_editable_set_text" (widget As Ptr, text As String)
+Private Optional Declare Sub LCGPlaceholder Lib "libgtk-4.so.1" Alias "gtk_entry_set_placeholder_text" (widget As Ptr, text As String)
+Private Optional Declare Sub LCGPassword Lib "libgtk-4.so.1" Alias "gtk_entry_set_visibility" (widget As Ptr, visible As Int32)
+Private Optional Declare Function LCGCombo Lib "libgtk-4.so.1" Alias "gtk_combo_box_text_new_with_entry" () As Ptr
+Private Optional Declare Function LCGComboChild Lib "libgtk-4.so.1" Alias "gtk_combo_box_get_child" (widget As Ptr) As Ptr
+Private Optional Declare Function LCGStrings Lib "libgtk-4.so.1" Alias "gtk_string_list_new" (strings As Ptr) As Ptr
+Private Optional Declare Sub LCGStringAppend Lib "libgtk-4.so.1" Alias "gtk_string_list_append" (model As Ptr, text As String)
+Private Optional Declare Function LCGDropdown Lib "libgtk-4.so.1" Alias "gtk_drop_down_new" (model As Ptr, expression As Ptr) As Ptr
+Private Optional Declare Function LCGScale Lib "libgtk-4.so.1" Alias "gtk_scale_new_with_range" (orientation As Int32, minimum As Double, maximum As Double, stepValue As Double) As Ptr
+Private Optional Declare Sub LCGDrawValue Lib "libgtk-4.so.1" Alias "gtk_scale_set_draw_value" (widget As Ptr, draw As Int32)
+Private Optional Declare Sub LCGRangeValue Lib "libgtk-4.so.1" Alias "gtk_range_set_value" (widget As Ptr, value As Double)
+Private Optional Declare Sub LCGFocusable Lib "libgtk-4.so.1" Alias "gtk_widget_set_focusable" (widget As Ptr, focusable As Int32)
+Private Optional Declare Sub LCGWindowFocus Lib "libgtk-4.so.1" Alias "gtk_window_set_focus" (window As Ptr, widget As Ptr)
+Private Optional Declare Sub LCGSelectRegion Lib "libgtk-4.so.1" Alias "gtk_editable_select_region" (widget As Ptr, first As Int32, last As Int32)
+Private Optional Declare Sub LCGVExpand Lib "libgtk-4.so.1" Alias "gtk_widget_set_vexpand" (widget As Ptr, expand As Int32)
+Private Optional Declare Sub LCGVAlign Lib "libgtk-4.so.1" Alias "gtk_widget_set_valign" (widget As Ptr, align As Int32)
+Private Optional Declare Function LCGProgress Lib "libgtk-4.so.1" Alias "gtk_progress_bar_new" () As Ptr
+Private Optional Declare Sub LCGFraction Lib "libgtk-4.so.1" Alias "gtk_progress_bar_set_fraction" (widget As Ptr, value As Double)
+Private Optional Declare Function LCGNotebook Lib "libgtk-4.so.1" Alias "gtk_notebook_new" () As Ptr
+Private Optional Declare Function LCGPage Lib "libgtk-4.so.1" Alias "gtk_notebook_append_page" (widget As Ptr, child As Ptr, label As Ptr) As Int32
+Private Optional Declare Function LCGScroll Lib "libgtk-4.so.1" Alias "gtk_scrolled_window_new" () As Ptr
+Private Optional Declare Sub LCGScrollChild Lib "libgtk-4.so.1" Alias "gtk_scrolled_window_set_child" (widget As Ptr, child As Ptr)
+Private Optional Declare Sub LCGScrollFrame Lib "libgtk-4.so.1" Alias "gtk_scrolled_window_set_has_frame" (widget As Ptr, frame As Int32)
+Private Optional Declare Function LCGTextView Lib "libgtk-4.so.1" Alias "gtk_text_view_new" () As Ptr
+Private Optional Declare Function LCGBuffer Lib "libgtk-4.so.1" Alias "gtk_text_view_get_buffer" (widget As Ptr) As Ptr
+Private Optional Declare Sub LCGBufferText Lib "libgtk-4.so.1" Alias "gtk_text_buffer_set_text" (buffer As Ptr, text As String, length As Int32)
+Private Optional Declare Function LCGColumnView Lib "libgtk-4.so.1" Alias "gtk_column_view_new" (model As Ptr) As Ptr
+Private Optional Declare Function LCGColumn Lib "libgtk-4.so.1" Alias "gtk_column_view_column_new" (title As String, factory As Ptr) As Ptr
+Private Optional Declare Sub LCGColumnAppend Lib "libgtk-4.so.1" Alias "gtk_column_view_append_column" (widget As Ptr, column As Ptr)
+Private Optional Declare Function LCGExpander Lib "libgtk-4.so.1" Alias "gtk_expander_new" (label As Ptr) As Ptr
+Private Optional Declare Sub LCGExpanded Lib "libgtk-4.so.1" Alias "gtk_expander_set_expanded" (widget As Ptr, expanded As Int32)
+Sequential Structure LCGRect
+    X As Single
+    Y As Single
+    W As Single
+    H As Single
+End Structure
+
+Private Function LCGFlag(value As Boolean) As Int32
+    If value Then Return 1
+    Return 0
+End Function
+
+Private Function LCGBuild(spec As ControlSnapshotDescriptor) As Ptr
+    Dim widget As Ptr = Nil
+    Select Case spec.Kind
+        Case "button"
+            widget = LCGButton(spec.Title)
+        Case "checkbox", "radio"
+            widget = LCGCheck(spec.Title)
+            LCGCheckActive(widget, LCGFlag(spec.State = 1))
+            LCGCheckMixed(widget, LCGFlag(spec.State = -1))
+            If spec.Kind = "radio" Then
+                Dim group As Ptr = LCGCheck("")
+                LCGRefSink(group)
+                LCGCheckGroup(widget, group)
+                LCGUnref(group)
+            End If
+        Case "radiogroup", "segments"
+            Dim orientation As Int32 = 1
+            If spec.Kind = "segments" Then orientation = 0
+            widget = LCGBox(orientation, 0)
+            If spec.Kind = "segments" Then LCGClass(widget, "linked")
+            Dim group As Ptr = Nil
+            For i As Integer = 0 To Array.LastIndex(spec.Items)
+                Dim option As Ptr = Nil
+                If spec.Kind = "segments" Then
+                    option = LCGToggle(spec.Items(i))
+                    LCGToggleActive(option, LCGFlag(i = spec.State))
+                    LCGExpand(option, 1)
+                Else
+                    option = LCGCheck(spec.Items(i))
+                    If group <> Nil Then LCGCheckGroup(option, group)
+                    If group = Nil Then group = option
+                    LCGCheckActive(option, LCGFlag(i = 0))
+                End If
+                LCGAppend(widget, option)
+            Next
+        Case "label"
+            widget = LCGLabel(spec.Text)
+            LCGAlign(widget, 0.0)
+        Case "date"
+            widget = LCGMenuButton()
+            Dim display As String = "2026-01-01 09:41"
+            If spec.Elements = 224 Then display = "2026-01-01"
+            If spec.Elements = 12 Then display = "09:41"
+            LCGMenuLabel(widget, display)
+        Case "textfield", "search", "combo"
+            widget = LCGEntry()
+            If spec.Kind = "search" Then
+                LCGRefSink(widget)
+                LCGUnref(widget)
+                widget = LCGSearch()
+            ElseIf spec.Kind = "combo" Then
+                LCGRefSink(widget)
+                LCGUnref(widget)
+                widget = LCGCombo()
+            End If
+            Dim entry As Ptr = widget
+            If spec.Kind = "combo" Then entry = LCGComboChild(widget)
+            LCGText(entry, spec.Text)
+            If spec.Kind <> "search" Then
+                LCGPlaceholder(entry, spec.Placeholder)
+                LCGPassword(entry, LCGFlag(Not spec.Flag))
+            End If
+        Case "popup"
+            Dim model As Ptr = LCGStrings(Nil)
+            For Each title As String In spec.Items
+                LCGStringAppend(model, title)
+            Next
+            widget = LCGDropdown(model, Nil)
+            ' gtk_drop_down_new takes ownership of the model.
+        Case "stepper"
+            widget = LCGBox(1, 0)
+            LCGClass(widget, "linked")
+            Dim up As Ptr = LCGIconButton("pan-up-symbolic")
+            Dim down As Ptr = LCGIconButton("pan-down-symbolic")
+            LCGIconSize(LCGButtonChild(up), 8)
+            LCGIconSize(LCGButtonChild(down), 8)
+            LCGAppend(widget, up)
+            LCGAppend(widget, down)
+        Case "slider"
+            Dim maximum As Double = Math.Max(spec.Minimum + 1.0, spec.Maximum)
+            widget = LCGScale(LCGFlag(spec.Flag), spec.Minimum, maximum, 1.0)
+            LCGDrawValue(widget, 0)
+            LCGRangeValue(widget, spec.Value)
+        Case "progress"
+            widget = LCGProgress()
+            Dim fraction As Double = (spec.Value - spec.Minimum) / Math.Max(1.0, spec.Maximum - spec.Minimum)
+            If spec.Flag Then fraction = 0.4
+            LCGFraction(widget, Math.Max(0.0, Math.Min(1.0, fraction)))
+            LCGVExpand(widget, 1)
+            LCGVAlign(widget, 3) ' GTK_ALIGN_CENTER; retain natural trough height.
+            Dim progress As Ptr = widget
+            widget = LCGBox(1, 0)
+            LCGAppend(widget, progress)
+        Case "tabs"
+            widget = LCGNotebook()
+            For Each title As String In spec.Items
+                LCGPage(widget, LCGBox(1, 0), LCGLabel(title))
+            Next
+        Case "textarea", "list"
+            widget = LCGScroll()
+            LCGScrollFrame(widget, 1)
+            Dim content As Ptr = Nil
+            If spec.Kind = "textarea" Then
+                content = LCGTextView()
+                LCGBufferText(LCGBuffer(content), spec.Text, -1)
+            Else
+                content = LCGColumnView(Nil)
+                Dim column As Ptr = LCGColumn(spec.Title, Nil)
+                LCGColumnAppend(content, column)
+                LCGUnref(column)
+            End If
+            LCGScrollChild(widget, content)
+        Case "disclosure"
+            widget = LCGExpander(Nil)
+            LCGExpanded(widget, LCGFlag(spec.State = 1))
+    End Select
+    If widget <> Nil Then LCGSensitive(widget, LCGFlag(spec.Enabled))
+    Return widget
+End Function
+
+Private Sub LCGApplyStyle(widget As Ptr, theme As Ptr, font As Ptr)
+    ' Snapshot controls never participate in keyboard focus, including entry internals.
+    LCGFocusable(widget, 0)
+    LCGStyleProvider(LCGStyle(widget), theme, 600)
+    If font <> Nil Then LCGStyleProvider(LCGStyle(widget), font, 601)
+    Dim child As Ptr = LCGFirst(widget)
+    While child <> Nil
+        LCGApplyStyle(child, theme, font)
+        child = LCGNext(child)
+    End While
+End Sub
+
+Private Function LCGRender(spec As ControlSnapshotDescriptor, w As Double, h As Double, dark As Boolean, scale As Double) As Picture
+    If LCGInit() = 0 Then Return Nil
+    Dim widget As Ptr = LCGBuild(spec)
+    If widget = Nil Then Return Nil
+    LCGRefSink(widget)
+    Dim host As Ptr = LCGWindow()
+    Dim theme As Ptr = LCGProvider()
+    Dim font As Ptr = Nil
+    Dim node As Ptr = Nil
+    Dim texture As Ptr = Nil
+    Dim data As Ptr = Nil
+    Try
+        Dim variant As Ptr = Nil
+        Dim variantName As String = "dark"
+        If dark Then variant = CType(variantName, Ptr)
+        Dim themeName As String = LCGSetting("gtk-theme-name")
+        If themeName = "" Then themeName = "Adwaita"
+        LCGTheme(theme, themeName, variant)
+        If spec.FontName <> "" Or spec.FontSize > 0.0 Or spec.Kind = "stepper" Then
+            Dim css As String = "* {"
+            ' CSS quoted strings: never allow source text to become CSS syntax.
+            Dim fontValue As JSONItem = JSONItem.NewObject()
+            fontValue.Value("name") = spec.FontName
+            If spec.FontName <> "" Then css += "font-family: " + Json.Stringify(fontValue.Value("name")) + ";"
+            If spec.FontSize > 0.0 Then css += "font-size: " + String.From(spec.FontSize) + "pt;"
+            If spec.Kind = "stepper" Then css += "min-height: 0; min-width: 0; padding: 0;"
+            css += "}"
+            font = LCGProvider()
+            LCGCSS(font, css, -1)
+        End If
+        LCGDecorated(host, 0)
+        LCGOpacity(host, 0.0)
+        LCGChild(host, widget)
+        LCGApplyStyle(host, theme, font)
+        LCGVisible(host, 1)
+        LCGWindowFocus(host, Nil)
+        If spec.Kind = "textfield" Or spec.Kind = "search" Then LCGSelectRegion(widget, 0, 0)
+        If spec.Kind = "combo" Then LCGSelectRegion(LCGComboChild(widget), 0, 0)
+        LCGAllocate(host, Math.Ceiling(w), Math.Ceiling(h), -1, Nil)
+        Dim snapshot As Ptr = LCGSnapshot()
+        LCGSnapshotScale(snapshot, scale, scale)
+        LCGSnapshotChild(host, widget, snapshot)
+        node = LCGNode(snapshot)
+        If node = Nil Then Return Nil
+        Dim viewport As LCGRect = { X: 0.0, Y: 0.0, W: Math.Ceiling(w * scale), H: Math.Ceiling(h * scale) }
+        texture = LCGTexture(LCGRenderer(host), node, CType(viewport, Ptr))
+        If texture = Nil Then Return Nil
+        data = LCGPNG(texture)
+        If data = Nil Then Return Nil
+        Dim length As Integer = LCGBytesSize(data)
+        Dim png As New Bytes(length)
+        png.Append(LCGBytesData(data, Nil), length)
+        Return Picture.FromPNG(png)
+    Finally
+        If data <> Nil Then LCGBytesUnref(data)
+        If texture <> Nil Then LCGUnref(texture)
+        If node <> Nil Then LCGNodeUnref(node)
+        LCGDestroy(host)
+        LCGUnref(widget)
+        LCGUnref(theme)
+        If font <> Nil Then LCGUnref(font)
+    End Try
+End Function
+#End If
+
+#If TargetWindows Then
+Sequential Structure LCWBitmapInfo
+    Size As UInt32
+    Width As Int32
+    Height As Int32
+    Planes As UInt16
+    Bits As UInt16
+    Compression As UInt32
+    ImageSize As UInt32
+    XPels As Int32
+    YPels As Int32
+    Used As UInt32
+    Important As UInt32
+    Colors As UInt32
+End Structure
+Sequential Structure LCWCommonControls
+    Size As UInt32
+    Classes As UInt32
+End Structure
+Sequential Structure LCWTabItem
+    Mask As UInt32
+    State As UInt32
+    StateMask As UInt32
+    Text As Ptr
+    TextMax As Int32
+    Image As Int32
+    Param As Int64
+End Structure
+Sequential Structure LCWColumn
+    Mask As UInt32
+    Format As Int32
+    Width As Int32
+    Text As Ptr
+    TextMax As Int32
+    SubItem As Int32
+End Structure
+Sequential Structure LCWDate
+    Year As UInt16
+    Month As UInt16
+    DayOfWeek As UInt16
+    Day As UInt16
+    Hour As UInt16
+    Minute As UInt16
+    Second As UInt16
+    Millisecond As UInt16
+End Structure
+Delegate Function LCWCallback(widget As Ptr, message As UInt32, word As UInt64, param As Int64, id As UInt64, data As UInt64) As Int64
+Private Optional Declare Function LCWCreate Lib "user32" Alias "CreateWindowExW" (extended As UInt32, cls As Ptr, title As Ptr, style As UInt32, x As Int32, y As Int32, width As Int32, height As Int32, parent As Ptr, menu As Ptr, instance As Ptr, parameter As Ptr) As Ptr
+Private Optional Declare Function LCWDestroy Lib "user32" Alias "DestroyWindow" (widget As Ptr) As Int32
+Private Optional Declare Function LCWSend Lib "user32" Alias "SendMessageW" (widget As Ptr, message As UInt32, word As UInt64, param As Int64) As Int64
+Private Optional Declare Function LCWEnable Lib "user32" Alias "EnableWindow" (widget As Ptr, enabled As Int32) As Int32
+Private Optional Declare Function LCWInit Lib "comctl32" Alias "InitCommonControlsEx" (info As Ptr) As Int32
+Private Optional Declare Function LCWSubclass Lib "comctl32" Alias "SetWindowSubclass" (widget As Ptr, callback As LCWCallback, id As UInt64, data As UInt64) As Int32
+Private Optional Declare Function LCWDefault Lib "comctl32" Alias "DefSubclassProc" (widget As Ptr, message As UInt32, word As UInt64, param As Int64) As Int64
+Private Optional Declare Function LCWDC Lib "user32" Alias "GetDC" (widget As Ptr) As Ptr
+Private Optional Declare Function LCWReleaseDC Lib "user32" Alias "ReleaseDC" (widget As Ptr, dc As Ptr) As Int32
+Private Optional Declare Function LCWMemoryDC Lib "gdi32" Alias "CreateCompatibleDC" (dc As Ptr) As Ptr
+Private Optional Declare Function LCWDeleteDC Lib "gdi32" Alias "DeleteDC" (dc As Ptr) As Int32
+Private Optional Declare Function LCWFlush Lib "gdi32" Alias "GdiFlush" () As Int32
+Private Optional Declare Function LCWDIB Lib "gdi32" Alias "CreateDIBSection" (dc As Ptr, info As Ptr, usage As UInt32, ByRef bits As Ptr, section As Ptr, offset As UInt32) As Ptr
+Private Optional Declare Function LCWSelect Lib "gdi32" Alias "SelectObject" (dc As Ptr, obj As Ptr) As Ptr
+Private Optional Declare Function LCWDelete Lib "gdi32" Alias "DeleteObject" (obj As Ptr) As Int32
+Private Optional Declare Function LCWBrush Lib "gdi32" Alias "CreateSolidBrush" (color As UInt32) As Ptr
+Private Optional Declare Function LCWTextColor Lib "gdi32" Alias "SetTextColor" (dc As Ptr, color As UInt32) As UInt32
+Private Optional Declare Function LCWBackground Lib "gdi32" Alias "SetBkColor" (dc As Ptr, color As UInt32) As UInt32
+Private Optional Declare Function LCWFill Lib "gdi32" Alias "PatBlt" (dc As Ptr, x As Int32, y As Int32, w As Int32, h As Int32, operation As UInt32) As Int32
+Private Optional Declare Function LCWFont Lib "gdi32" Alias "CreateFontW" (height As Int32, width As Int32, escapement As Int32, orientation As Int32, weight As Int32, italic As UInt32, underline As UInt32, strike As UInt32, charset As UInt32, outputPrecision As UInt32, clipPrecision As UInt32, quality As UInt32, pitch As UInt32, family As Ptr) As Ptr
+Private Optional Declare Function LCWTheme Lib "uxtheme" Alias "SetWindowTheme" (widget As Ptr, application As Ptr, classes As Ptr) As Int32
+
+' Scoped to a synchronous, UI-thread-only capture; no project code or event-loop
+' pumping occurs while native controls send WM_CTLCOLOR messages to this parent.
+Private Class LCWPaintContext
+    Public Shared Property Brush As Ptr = Nil
+    Public Shared Property Dark As Boolean = False
+End Class
+Private Function LCWWide(value As String) As Bytes
+    Dim encoded As Bytes = value.AsUTF16LE()
+    encoded.Append(0)
+    encoded.Append(0)
+    Return encoded
+End Function
+Private Function LCWParentMessage(widget As Ptr, message As UInt32, word As UInt64, param As Int64, id As UInt64, data As UInt64) As Int64
+    If message >= 306 And message <= 312 Then
+        Dim foreground As UInt32 = 2105376
+        Dim background As UInt32 = 16777215
+        If LCWPaintContext.Dark Then
+            foreground = 15790320
+            background = 2763306
+        End If
+        Dim dcAddress As Integer = word
+        LCWTextColor(CType(dcAddress, Ptr), foreground)
+        LCWBackground(CType(dcAddress, Ptr), background)
+        Return CType(LCWPaintContext.Brush, Integer)
+    End If
+    Return LCWDefault(widget, message, word, param)
+End Function
+Private Function LCWWidget(cls As String, text As String, style As UInt32, parent As Ptr, x As Integer, y As Integer, w As Integer, h As Integer, font As Ptr, dark As Boolean) As Ptr
+    Dim wideClass As Bytes = LCWWide(cls)
+    Dim wideText As Bytes = LCWWide(text)
+    ' WS_CHILD | WS_VISIBLE. The parent is never shown or activated.
+    Dim widget As Ptr = LCWCreate(0, wideClass.DataPtr(), wideText.DataPtr(), style Or 1342177280, x, y, Math.Max(1, w), Math.Max(1, h), parent, Nil, Nil, Nil)
+    If widget <> Nil Then
+        LCWSend(widget, 48, CType(font, Integer), 0)
+        Dim theme As String = "Explorer"
+        If dark Then theme = "DarkMode_Explorer"
+        Dim themeName As Bytes = LCWWide(theme)
+        LCWTheme(widget, themeName.DataPtr(), Nil)
+        ' Explorer's themed check/radio WM_PRINT paints white and ignores the
+        ' parent's caption colors. Classic native buttons honor WM_CTLCOLOR.
+        If dark And cls = "BUTTON" And (style = 4 Or style = 6) Then
+            Dim classic As Bytes = LCWWide("")
+            LCWTheme(widget, classic.DataPtr(), classic.DataPtr())
+        End If
+    End If
+    Return widget
+End Function
+Private Function LCWBuild(spec As ControlSnapshotDescriptor, parent As Ptr, w As Integer, h As Integer, font As Ptr, dark As Boolean, scale As Double) As Ptr
+    Dim cls As String = ""
+    Dim text As String = spec.Text
+    Dim style As UInt32 = 0
+    Select Case spec.Kind
+        Case "button", "checkbox", "radio"
+            cls = "BUTTON"
+            text = spec.Title
+            If spec.Kind = "checkbox" Then style = 6
+            If spec.Kind = "radio" Then style = 4
+        Case "label"
+            cls = "STATIC"
+            style = 12
+        Case "textfield", "search", "textarea", "date"
+            cls = "EDIT"
+            style = 8388736 ' WS_BORDER | ES_AUTOHSCROLL.
+            If spec.Flag Then style = style Or 32
+            If spec.Kind = "textarea" Then style = 10506308 ' Border, multiline, auto-vscroll, vertical scroll.
+            If spec.Kind = "date" Then
+                cls = "SysDateTimePick32"
+                style = 0
+                If spec.Elements = 236 Then cls = "STATIC"
+            End If
+        Case "popup", "combo"
+            cls = "COMBOBOX"
+            style = 2097155 ' WS_VSCROLL | CBS_DROPDOWNLIST.
+            If spec.Kind = "combo" Then style = 2097154
+        Case "slider"
+            cls = "msctls_trackbar32"
+            style = 16 ' TBS_NOTICKS.
+            If spec.Flag Then style = style Or 2
+        Case "progress"
+            cls = "msctls_progress32"
+        Case "stepper"
+            cls = "msctls_updown32"
+        Case "tabs"
+            cls = "SysTabControl32"
+        Case "list"
+            cls = "SysListView32"
+            style = 8388609 ' WS_BORDER | LVS_REPORT.
+        Case "radiogroup", "segments"
+            cls = "STATIC"
+        Case Else
+            Return Nil
+    End Select
+    Dim widget As Ptr = LCWWidget(cls, text, style, parent, 0, 0, w, h, font, dark)
+    If widget = Nil Then Return Nil
+    If spec.Kind = "radiogroup" Or spec.Kind = "segments" Or spec.Kind = "date" Then LCWSubclass(widget, AddressOf LCWParentMessage, 1, 0)
+    If Not spec.Enabled Then LCWEnable(widget, 0)
+    Select Case spec.Kind
+        Case "checkbox", "radio"
+            Dim state As Integer = Math.Max(0, spec.State)
+            If spec.State < 0 Then state = 2
+            LCWSend(widget, 241, state, 0)
+        Case "textfield", "search"
+            Dim placeholder As Bytes = LCWWide(spec.Placeholder)
+            LCWSend(widget, 5377, 0, CType(placeholder.DataPtr(), Integer))
+        Case "popup", "combo"
+            For Each title As String In spec.Items
+                Dim item As Bytes = LCWWide(title)
+                LCWSend(widget, 323, 0, CType(item.DataPtr(), Integer))
+            Next
+            If spec.Kind = "popup" Then LCWSend(widget, 334, 0, 0)
+        Case "slider", "progress", "stepper"
+            ' Win32 ranges are integral; normalize the Double API just as the
+            ' runtime does, preserving fractional values and large endpoints.
+            Dim lo As Integer = 0
+            Dim hi As Integer = 10000
+            Dim fraction As Double = 0.0
+            If spec.Maximum > spec.Minimum Then fraction = (spec.Value - spec.Minimum) / (spec.Maximum - spec.Minimum)
+            Dim current As Integer = Math.Round(Math.Max(0.0, Math.Min(1.0, fraction)) * 10000.0)
+            If spec.Kind = "slider" Then
+                LCWSend(widget, 1031, 0, lo)
+                LCWSend(widget, 1032, 0, hi)
+                LCWSend(widget, 1029, 1, current)
+            ElseIf spec.Kind = "progress" Then
+                ' Themed progress bars animate increasing positions. A one-unit
+                ' overshoot followed by a decrease commits the position immediately;
+                ' restore the real maximum before WM_PRINT (including the full case).
+                LCWSend(widget, 1030, lo, hi + 1)
+                If spec.Flag Then current = lo + (hi - lo) * 0.4
+                LCWSend(widget, 1026, current + 1, 0)
+                LCWSend(widget, 1026, current, 0)
+                LCWSend(widget, 1030, lo, hi)
+            Else
+                LCWSend(widget, 1135, lo, hi)
+                LCWSend(widget, 1137, 0, current)
+            End If
+        Case "tabs"
+            For i As Integer = 0 To Array.LastIndex(spec.Items)
+                Dim title As Bytes = LCWWide(spec.Items(i))
+                Dim item As LCWTabItem
+                item.Mask = 1
+                item.Text = title.DataPtr()
+                LCWSend(widget, 4926, i, CType(CType(item, Ptr), Integer))
+            Next
+        Case "list"
+            If dark Then
+                LCWSend(widget, 4097, 0, 2763306) ' LVM_SETBKCOLOR.
+                LCWSend(widget, 4132, 0, 15790320) ' LVM_SETTEXTCOLOR.
+                LCWSend(widget, 4134, 0, 2763306) ' LVM_SETTEXTBKCOLOR.
+            End If
+            Dim title As Bytes = LCWWide(spec.Title)
+            Dim column As LCWColumn
+            column.Mask = 6
+            column.Width = Math.Max(20, w - 4)
+            column.Text = title.DataPtr()
+            LCWSend(widget, 4193, 0, CType(CType(column, Ptr), Integer))
+        Case "date"
+            If spec.Elements = 236 Then
+                Dim split As Integer = Math.Round(w * 0.6)
+                Dim dateWidget As Ptr = LCWWidget("SysDateTimePick32", "", 0, widget, 0, 0, split, h, font, dark)
+                Dim timeWidget As Ptr = LCWWidget("SysDateTimePick32", "", 9, widget, split, 0, w - split, h, font, dark)
+                LCWSetDate(dateWidget, "yyyy-MM-dd")
+                LCWSetDate(timeWidget, "HH:mm")
+                If Not spec.Enabled Then
+                    LCWEnable(dateWidget, 0)
+                    LCWEnable(timeWidget, 0)
+                End If
+            Else
+                Dim format As String = "yyyy-MM-dd"
+                If spec.Elements = 12 Then format = "HH:mm"
+                LCWSetDate(widget, format)
+            End If
+        Case "radiogroup", "segments"
+            For i As Integer = 0 To Array.LastIndex(spec.Items)
+                Dim x As Integer = 0
+                Dim y As Integer = Math.Round(i * 22.0 * scale)
+                Dim cw As Integer = w
+                Dim ch As Integer = Math.Round(22.0 * scale)
+                Dim buttonStyle As UInt32 = 4
+                If spec.Kind = "segments" Then
+                    cw = w \ Math.Max(1, Array.Count(spec.Items))
+                    x = i * cw
+                    y = 0
+                    ch = h
+                    buttonStyle = 4099 ' BS_PUSHLIKE | BS_AUTOCHECKBOX.
+                End If
+                Dim child As Ptr = LCWWidget("BUTTON", spec.Items(i), buttonStyle, widget, x, y, cw, ch, font, dark)
+                If Not spec.Enabled Then LCWEnable(child, 0)
+                If (spec.Kind = "radiogroup" And i = 0) Or (spec.Kind = "segments" And i = spec.State) Then LCWSend(child, 241, 1, 0)
+            Next
+    End Select
+    Return widget
+End Function
+Private Sub LCWSetDate(widget As Ptr, format As String)
+    If widget = Nil Then Return
+    Dim dateValue As LCWDate = { Year: 2026, Month: 1, DayOfWeek: 4, Day: 1, Hour: 9, Minute: 41, Second: 0, Millisecond: 0 }
+    LCWSend(widget, 4098, 0, CType(CType(dateValue, Ptr), Integer))
+    Dim formatText As Bytes = LCWWide(format)
+    LCWSend(widget, 4146, 0, CType(formatText.DataPtr(), Integer))
+End Sub
+Private Function LCWRender(spec As ControlSnapshotDescriptor, w As Double, h As Double, dark As Boolean, scale As Double) As Picture
+    Dim init As LCWCommonControls = { Size: 8, Classes: 65535 }
+    LCWInit(CType(init, Ptr))
+    Dim pw As Integer = Math.Ceiling(w * scale)
+    Dim ph As Integer = Math.Ceiling(h * scale)
+    Dim cls As Bytes = LCWWide("STATIC")
+    Dim empty As Bytes = LCWWide("")
+    Dim host As Ptr = LCWCreate(134217856, cls.DataPtr(), empty.DataPtr(), 2147483648, 0, 0, pw, ph, Nil, Nil, Nil, Nil)
+    If host = Nil Then Return Nil
+    Dim dc As Ptr = Nil
+    Dim memory As Ptr = Nil
+    Dim bitmap As Ptr = Nil
+    Dim previous As Ptr = Nil
+    Dim brush As Ptr = Nil
+    Dim font As Ptr = Nil
+    Try
+        Dim background As UInt32 = 16777215
+        If dark Then background = 2763306
+        brush = LCWBrush(background)
+        LCWPaintContext.Brush = brush
+        LCWPaintContext.Dark = dark
+        LCWSubclass(host, AddressOf LCWParentMessage, 1, 0)
+        Dim name As String = spec.FontName
+        If name = "" Then name = "Segoe UI"
+        Dim family As Bytes = LCWWide(name)
+        Dim points As Double = spec.FontSize
+        If points <= 0.0 Then points = 9.0
+        font = LCWFont(-Math.Round(points * scale * 96.0 / 72.0), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, family.DataPtr())
+        Dim widget As Ptr = LCWBuild(spec, host, pw, ph, font, dark, scale)
+        If widget = Nil Then Return Nil
+        dc = LCWDC(host)
+        memory = LCWMemoryDC(dc)
+        If memory = Nil Then Return Nil
+        Dim info As LCWBitmapInfo
+        info.Size = 40
+        info.Width = pw
+        info.Height = -ph ' Top-down BGRA.
+        info.Planes = 1
+        info.Bits = 32
+        Dim pixels As Ptr = Nil
+        bitmap = LCWDIB(memory, CType(info, Ptr), 0, pixels, Nil, 0)
+        If bitmap = Nil Or pixels = Nil Then Return Nil
+        previous = LCWSelect(memory, bitmap)
+        Dim oldBrush As Ptr = LCWSelect(memory, brush)
+        LCWFill(memory, 0, 0, pw, ph, 15728673) ' PATCOPY.
+        LCWSelect(memory, oldBrush)
+        LCWSend(widget, 791, CType(memory, Integer), 30) ' WM_PRINT: nonclient/client/erase/children; no CHECKVISIBLE.
+        LCWFlush() ' Finish batched GDI drawing before reading DIB pixels on the CPU.
+        Dim rgba As New Bytes(pw * ph * 4)
+        rgba.Append(pixels, pw * ph * 4)
+        For i As Integer = 0 To rgba.Count - 1 Step 4
+            Dim blue As Integer = rgba.Item(i)
+            rgba.SetItem(i, rgba.Item(i + 2))
+            rgba.SetItem(i + 2, blue)
+            rgba.SetItem(i + 3, 255) ' GDI writes no alpha; background is part of this snapshot.
+        Next
+        Return Picture.FromBuffer(rgba.DataPtr(), rgba.Count, 0, pw, ph)
+    Finally
+        If previous <> Nil Then LCWSelect(memory, previous)
+        If bitmap <> Nil Then LCWDelete(bitmap)
+        If memory <> Nil Then LCWDeleteDC(memory)
+        If dc <> Nil Then LCWReleaseDC(host, dc)
+        LCWDestroy(host)
+        If font <> Nil Then LCWDelete(font)
+        If brush <> Nil Then LCWDelete(brush)
+        LCWPaintContext.Brush = Nil
+    End Try
+End Function
+#End If
+
+' Native appearance context is part of render identity; position is not.
+Public Function AppearanceKey() As String
+    #If TargetLinux Then
+        Return LCGSetting("gtk-theme-name") + "\n" + LCGSetting("gtk-font-name") + "\n" + System.EnvironmentVariable("GTK_THEME").Or("")
+    #ElseIf TargetWindows Then
+        Return String.From(LCWSysColor(15)) + ":" + String.From(LCWSysColor(8)) + ":" + String.From(LCWSysColor(13))
+    #ElseIf TargetMac Then
+        Dim accent As Ptr = LCNConvertColor(LCNAccent(LCNClass("NSColor")), LCNDeviceRGB(LCNClass("NSColorSpace")))
+        Dim key As String = ""
+        If accent <> Nil Then key = String.From(LCNRed(accent)) + ":" + String.From(LCNGreen(accent)) + ":" + String.From(LCNBlue(accent))
+        Return key + ":" + String.From(LCNContrast(LCNWorkspace(LCNClass("NSWorkspace"))))
+    #End If
+End Function
+#If TargetLinux Then
+Private Optional Declare Function LCGSettings Lib "libgtk-4.so.1" Alias "gtk_settings_get_default" () As Ptr
+Private Optional Declare Sub LCGGetSetting Lib "libgobject-2.0.so.0" Alias "g_object_get" (obj As Ptr, name As String, ByRef value As CString, finish As Ptr)
+Private Optional Declare Sub LCGFree Lib "libglib-2.0.so.0" Alias "g_free" (value As Ptr)
+Private Function LCGSetting(name As String) As String
+    If LCGInit() = 0 Then Return ""
+    Dim value As CString = Nil
+    LCGGetSetting(LCGSettings(), name, value, Nil)
+    If value = Nil Then Return ""
+    Try
+        Return CType(value, String)
+    Finally
+        LCGFree(value)
+    End Try
+End Function
+#ElseIf TargetWindows Then
+Private Optional Declare Function LCWSysColor Lib "user32" Alias "GetSysColor" (index As Int32) As UInt32
+#End If
+
+Public Function BackingScale() As Double
+        Dim backing As Double = 1.0
+        #If TargetMac Then
+            Dim screen As Ptr = LCNMainScreen(LCNClass("NSScreen"))
+            If screen <> Nil Then backing = Math.Max(1.0, LCNBackingScale(screen))
+        #End If
+        Return backing
+    End Function
+
+
+''' Detached result. Status is "rendered", "unsupported", "invalid-request" or "failed".
+Public Class ControlSnapshotOutcome
+    Public Property Image As Picture = Nil
+    Public Property Status As String = "unsupported"
+    Public Property Message As String = ""
+End Class
+
+''' Position-independent visual identity; callers own caching and invalidation.
+Public Function CacheKey(spec As ControlSnapshotDescriptor, w As Double, h As Double, dark As Boolean, scale As Double) As String
+    Dim appearance As String = "light"
+    If dark Then appearance = "dark"
+    Return spec.Key() + "\n" + String.From(w) + "x" + String.From(h) + "\n" + appearance + "\n" + String.From(scale)
+End Function
+
+Public Function TryRender(spec As ControlSnapshotDescriptor, w As Double, h As Double, scale As Double, dark As Boolean) As ControlSnapshotOutcome
+    Dim outcome As New ControlSnapshotOutcome()
+    If spec = Nil Then Return outcome
+    Select Case spec.Kind
+        Case "button", "checkbox", "radio", "radiogroup", "label", "textfield", "search", "combo", "popup", "date", "slider", "progress", "stepper", "segments", "tabs", "list", "textarea", "disclosure"
+        Case Else
+            Return outcome
+    End Select
+    If Not (w >= 1.0 And h >= 1.0 And scale > 0.0 And scale <= 8.0 And spec.FontSize >= 0.0 And spec.FontSize <= 1000.0) Then
+        outcome.Status = "invalid-request"
+        Return outcome
+    End If
+    If Not (Math.Ceiling(w * scale) <= 32767.0 And Math.Ceiling(h * scale) <= 32767.0 And Math.Ceiling(w * scale) * Math.Ceiling(h * scale) <= 16777216.0) Then
+        outcome.Status = "invalid-request"
+        Return outcome
+    End If
+    outcome.Status = "failed"
+    Try
+        #If TargetMac Then
+            Dim png As Bytes = LCNRender(spec, w, h, dark, scale)
+            If png <> Nil Then outcome.Image = Picture.FromPNG(png)
+        #ElseIf TargetLinux Then
+            outcome.Image = LCGRender(spec, w, h, dark, scale)
+        #ElseIf TargetWindows Then
+            If spec.Kind = "disclosure" Then
+                outcome.Status = "unsupported"
+                Return outcome
+            End If
+            outcome.Image = LCWRender(spec, w, h, dark, scale)
+            If dark And outcome.Image <> Nil Then
+                Select Case spec.Kind
+                    Case "date", "tabs"
+                        outcome.Message = "Win32 dark appearance fallback: native date/tab surfaces remain light."
+                    Case "list"
+                        outcome.Message = "Win32 partial dark appearance: list body is dark; native header can remain light."
+                    Case "combo", "popup"
+                        outcome.Message = "Win32 partial dark appearance: native combo surface can remain light."
+                End Select
+            End If
+        #End If
+        If outcome.Image <> Nil Then outcome.Status = "rendered"
+    Catch e As Exception
+        outcome.Message = e.Message
+    End Try
+    Return outcome
+End Function
+
+''' Convenience form: Nil for any non-rendered outcome; TryRender explains why.
+Public Function Render(spec As ControlSnapshotDescriptor, w As Double, h As Double, scale As Double, dark As Boolean) As Picture
+    Return TryRender(spec, w, h, scale, dark).Image
+End Function
