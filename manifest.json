@@ -1,1 +1,1 @@
-{"schema":1,"name":"controlsnapshot","version":"0.1.0","description":"Native builtin design-time control snapshots with explicit outcomes and caller-owned caching"}
+{"schema":1,"name":"controlsnapshot","version":"0.1.0","description":"Capture native control state for visual design tools"}
