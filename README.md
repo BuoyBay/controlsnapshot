@@ -2,7 +2,7 @@
 
 Native builtin control images for visual editors. Import
 `controlsnapshot.ControlSnapshot`. This is a design-time descriptor renderer;
-Buoy's runtime still has no general `UIControl.RenderTo` operation.
+the runtime still has no general `UIControl.RenderTo` operation.
 
 `ControlSnapshotDescriptor` carries Kind, Title, Text, Placeholder, State,
 Minimum, Maximum, Value, Flag, Elements, Items, RowHeight, Enabled, FontName and
@@ -48,7 +48,6 @@ On your own machine, install Buoy and run:
 buoy ai init --both
 ```
 
-The generated agent files and editor settings stay local and are ignored by Git.
 
 ## Contributing
 

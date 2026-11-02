@@ -75,9 +75,3 @@ sizes/scales, scales above 8, dimensions above 32767 pixels and images above
 16,777,216 pixels (64 MiB decoded RGBA, excluding transient native/PNG allocations).
 Callers must clear caches for visual changes not represented by AppearanceKey,
 such as font registration, runtime revisions or backdrop-dependent properties.
-
-See tests/controlsnapshot_test.bui and BUI-709's reference-evidence for semantic,
-native execution and visual inspection scope. Cross-target checks prove parsing
-and typing only; native tests cover the architecture actually executing them.
-
-Test suites and fixtures are maintainer-local and are not part of this public repository.
