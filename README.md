@@ -1,4 +1,4 @@
-# Capture native control state for visual design tools
+# Native control snapshots for visual design tools
 
 Native builtin control images for visual editors. Import
 `controlsnapshot.ControlSnapshot`. This is a design-time descriptor renderer;
